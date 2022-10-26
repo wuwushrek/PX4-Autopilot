@@ -79,6 +79,7 @@ void LoggedTopics::add_default_topics()
 	add_topic("manual_control_setpoint", 200);
 	add_topic("manual_control_switches");
 	add_topic("mission_result");
+	add_topic("mpc_full_state", 10);
 	add_topic("navigator_mission_item");
 	add_topic("npfg_status", 100);
 	add_topic("offboard_control_mode", 100);
@@ -232,6 +233,7 @@ void LoggedTopics::add_default_topics()
 	add_topic("actuator_controls_virtual_mc");
 	add_topic("fw_virtual_attitude_setpoint");
 	add_topic("mc_virtual_attitude_setpoint");
+	add_topic("mpc_full_state", 10);
 	add_topic("time_offset");
 	add_topic("vehicle_angular_acceleration", 10);
 	add_topic("vehicle_angular_velocity", 10);
@@ -282,6 +284,7 @@ void LoggedTopics::add_high_rate_topics()
 {
 	// maximum rate to analyze fast maneuvers (e.g. for racing)
 	add_topic("manual_control_setpoint");
+	add_topic("mpc_full_state", 10);
 	add_topic("rate_ctrl_status", 20);
 	add_topic("sensor_combined");
 	add_topic("vehicle_angular_acceleration");
@@ -311,6 +314,7 @@ void LoggedTopics::add_estimator_replay_topics()
 {
 	// for estimator replay (need to be at full rate)
 	add_topic("ekf2_timestamps");
+	add_topic("mpc_full_state", 10);
 
 	// current EKF2 subscriptions
 	add_topic("airspeed");
@@ -344,6 +348,7 @@ void LoggedTopics::add_sensor_comparison_topics()
 void LoggedTopics::add_vision_and_avoidance_topics()
 {
 	add_topic("collision_constraints");
+	add_topic("mpc_full_state", 10);
 	add_topic("obstacle_distance_fused");
 	add_topic("vehicle_mocap_odometry", 30);
 	add_topic("vehicle_trajectory_waypoint", 200);
@@ -366,6 +371,7 @@ void LoggedTopics::add_system_identification_topics()
 	// for system id need to log imu and controls at full rate
 	add_topic("actuator_controls_0");
 	add_topic("actuator_controls_1");
+	add_topic("mpc_full_state", 10);
 	add_topic("sensor_combined");
 	add_topic("vehicle_angular_acceleration");
 	add_topic("vehicle_torque_setpoint");

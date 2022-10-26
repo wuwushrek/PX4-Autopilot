@@ -50,6 +50,7 @@ EKF2Selector::EKF2Selector() :
 	_vehicle_local_position_pub.advertise();
 	_vehicle_odometry_pub.advertise();
 	_wind_pub.advertise();
+	_mpc_full_state_pub.advertise();
 }
 
 EKF2Selector::~EKF2Selector()
@@ -569,8 +570,42 @@ void EKF2Selector::PublishVehicleOdometry()
 
 			odometry.timestamp = hrt_absolute_time();
 			_vehicle_odometry_pub.publish(odometry);
+			PublishMpcFullState(odometry);
 		}
 	}
+}
+
+void EKF2Selector::PublishMpcFullState(vehicle_odometry_s &curr_odom)
+{
+	// Create an mpc full state message
+	mpc_full_state_s mpc_full_state;
+	// Copy the current odometry message inside the mpc full state message
+	mpc_full_state.timestamp = curr_odom.timestamp;
+	mpc_full_state.timestamp_sample = curr_odom.timestamp_sample;
+	mpc_full_state.x = curr_odom.position[0];
+	mpc_full_state.y = curr_odom.position[1];
+	mpc_full_state.z = curr_odom.position[2];
+	mpc_full_state.vx = curr_odom.velocity[0];
+	mpc_full_state.vy = curr_odom.velocity[1];
+	mpc_full_state.vz = curr_odom.velocity[2];
+	mpc_full_state.qw = curr_odom.q[0];
+	mpc_full_state.qx = curr_odom.q[1];
+	mpc_full_state.qy = curr_odom.q[2];
+	mpc_full_state.qz = curr_odom.q[3];
+	mpc_full_state.wx = curr_odom.angular_velocity[0];
+	mpc_full_state.wy = curr_odom.angular_velocity[1];
+	mpc_full_state.wz = curr_odom.angular_velocity[2];
+	// Create an actuator_motors message
+	actuator_motors_s motors_cmd;
+	_actuator_motors_sub.copy(&motors_cmd);
+	// Copy the actuator_motors message inside the mpc full state message
+	// TODO : Improve this part for all possible configurations
+	mpc_full_state.m1 = motors_cmd.control[0];
+	mpc_full_state.m2 = motors_cmd.control[1];
+	mpc_full_state.m3 = motors_cmd.control[2];
+	mpc_full_state.m4 = motors_cmd.control[3];
+	// Publish the mpc full state message
+	_mpc_full_state_pub.publish(mpc_full_state);
 }
 
 void EKF2Selector::PublishVehicleGlobalPosition()

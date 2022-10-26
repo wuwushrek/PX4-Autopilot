@@ -55,6 +55,8 @@
 #include <uORB/topics/vehicle_global_position.h>
 #include <uORB/topics/vehicle_odometry.h>
 #include <uORB/topics/wind.h>
+#include <uORB/topics/mpc_full_state.h>
+#include <uORB/topics/actuator_motors.h>
 
 #if CONSTRAINED_MEMORY
 # define EKF2_MAX_INSTANCES 2
@@ -90,6 +92,7 @@ private:
 	void PublishVehicleGlobalPosition();
 	void PublishVehicleOdometry();
 	void PublishWindEstimate();
+	void PublishMpcFullState(vehicle_odometry_s &curr_odom);
 
 	bool SelectInstance(uint8_t instance);
 
@@ -230,6 +233,7 @@ private:
 
 	uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
 	uORB::Subscription _sensors_status_imu{ORB_ID(sensors_status_imu)};
+	uORB::Subscription _actuator_motors_sub{ORB_ID(actuator_motors)};
 
 	// Publications
 	uORB::Publication<estimator_selector_status_s> _estimator_selector_status_pub{ORB_ID(estimator_selector_status)};
@@ -239,6 +243,7 @@ private:
 	uORB::Publication<vehicle_local_position_s>    _vehicle_local_position_pub{ORB_ID(vehicle_local_position)};
 	uORB::Publication<vehicle_odometry_s>          _vehicle_odometry_pub{ORB_ID(vehicle_odometry)};
 	uORB::Publication<wind_s>             _wind_pub{ORB_ID(wind)};
+	uORB::Publication<mpc_full_state_s>   _mpc_full_state_pub{ORB_ID(mpc_full_state)};
 
 	DEFINE_PARAMETERS(
 		(ParamFloat<px4::params::EKF2_SEL_ERR_RED>) _param_ekf2_sel_err_red,
