@@ -78,10 +78,13 @@ private:
 			msg.wx = mpc_state.wx;
 			msg.wy = mpc_state.wy;
 			msg.wz = mpc_state.wz;
+			// Motor inputs
 			msg.m1 = mpc_state.m1;
 			msg.m2 = mpc_state.m2;
 			msg.m3 = mpc_state.m3;
 			msg.m4 = mpc_state.m4;
+			msg.m5 = mpc_state.m5;
+			msg.m6 = mpc_state.m6;
 
 			mavlink_msg_mpc_full_state_send_struct(_mavlink->get_channel(), &msg);
 

@@ -27,6 +27,12 @@
             "vehicle": "typhoon_h480",
             "test_filter": "[controlallocation]",
             "timeout_min": 10
+        },
+        {
+            "model": "myhexa",
+            "vehicle": "myhexa",
+            "test_filter": "[controlallocation]",
+            "timeout_min": 10
         }
     ]
 }

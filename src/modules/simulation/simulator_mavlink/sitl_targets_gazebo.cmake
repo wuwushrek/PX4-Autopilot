@@ -93,6 +93,7 @@ set(models
 	techpod
 	tiltrotor
 	typhoon_h480
+	myhexa
 	uuv_bluerov2_heavy
 	uuv_hippocampus
 )

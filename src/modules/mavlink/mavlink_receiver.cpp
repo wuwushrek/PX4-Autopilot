@@ -138,6 +138,10 @@ MavlinkReceiver::handle_message(mavlink_message_t *msg)
 		handle_message_command_ack(msg);
 		break;
 
+	case MAVLINK_MSG_ID_MPC_MOTORS_CMD:
+		handle_message_mpc_motors_cmd(msg);
+		break;
+
 	case MAVLINK_MSG_ID_OPTICAL_FLOW_RAD:
 		handle_message_optical_flow_rad(msg);
 		break;
@@ -1600,6 +1604,45 @@ void MavlinkReceiver::fill_thrust(float *thrust_body_array, uint8_t vehicle_type
 		}
 
 		break;
+	}
+}
+
+void
+MavlinkReceiver::handle_message_mpc_motors_cmd(mavlink_message_t *msg)
+{
+	mavlink_mpc_motors_cmd_t mpc_m;
+	mavlink_msg_mpc_motors_cmd_decode(msg, &mpc_m);
+
+	//mpc_motors_cmd init
+	mpc_motors_cmd_s mpc_m_msg{};
+
+	mpc_m_msg.timestamp = hrt_absolute_time();// _mavlink_timesync.sync_stamp(mpc_m.time_usec);
+
+	// Fill in the field m1, m2, m3, m4
+	for (int i = 0; i < 6; i++) {
+		mpc_m_msg.motor_val_des[i] = mpc_m.motor_val_des[i];
+	}
+	for (int i = 0; i < 4; i++) {
+		mpc_m_msg.thrust_and_angrate_des[i] = mpc_m.thrust_and_angrate_des[i];
+	}
+
+	// MPC controller on
+	mpc_m_msg.mpc_on = mpc_m.mpc_on;
+	mpc_m_msg.weight_motors = mpc_m.weight_motors;
+
+	offboard_control_mode_s offboard_control_mode{};
+	offboard_control_mode.body_rate = true;
+	offboard_control_mode.timestamp = mpc_m_msg.timestamp;
+	if (mpc_m_msg.mpc_on == mpc_motors_cmd_s::MPC_ON) {
+		_offboard_control_mode_pub.publish(offboard_control_mode);
+	}
+
+	vehicle_status_s vehicle_status{};
+	_vehicle_status_sub.copy(&vehicle_status);
+
+	// Publish the motor commands only once in OFFBOARD
+	if (vehicle_status.nav_state == vehicle_status_s::NAVIGATION_STATE_OFFBOARD || mpc_m_msg.mpc_on == mpc_motors_cmd_s::MPC_TEST || mpc_m_msg.mpc_on == mpc_motors_cmd_s::MPC_RESET) {
+		_mpc_motors_cmd_pub.publish(mpc_m_msg);
 	}
 }
 

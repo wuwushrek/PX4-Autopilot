@@ -1488,6 +1488,7 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 	switch (_mode) {
 	case MAVLINK_MODE_NORMAL:
 		configure_stream_local("ADSB_VEHICLE", unlimited_rate);
+		configure_stream_local("MPC_FULL_STATE", 10.0f);
 		configure_stream_local("ALTITUDE", 1.0f);
 		configure_stream_local("ATTITUDE", 15.0f);
 		configure_stream_local("ATTITUDE_QUATERNION", 10.0f);
@@ -1529,13 +1530,12 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 		configure_stream_local("VFR_HUD", 4.0f);
 		configure_stream_local("VIBRATION", 0.1f);
 		configure_stream_local("WIND_COV", 0.5f);
-		configure_stream_local("MPC_FULL_STATE", 10.0f);
 
 #if !defined(CONSTRAINED_FLASH)
 		configure_stream_local("DEBUG", 1.0f);
 		configure_stream_local("DEBUG_FLOAT_ARRAY", 1.0f);
 		configure_stream_local("DEBUG_VECT", 1.0f);
-		configure_stream_local("NAMED_VALUE_FLOAT", 1.0f);
+		configure_stream_local("NAMED_VALUE_FLOAT", 10.0f);
 		configure_stream_local("LINK_NODE_STATUS", 1.0f);
 #endif // !CONSTRAINED_FLASH
 
@@ -1663,7 +1663,7 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 		configure_stream_local("DEBUG", 1.0f);
 		configure_stream_local("DEBUG_FLOAT_ARRAY", 1.0f);
 		configure_stream_local("DEBUG_VECT", 1.0f);
-		configure_stream_local("NAMED_VALUE_FLOAT", 1.0f);
+		configure_stream_local("NAMED_VALUE_FLOAT", 10.0f);
 		configure_stream_local("LINK_NODE_STATUS", 1.0f);
 #endif // !CONSTRAINED_FLASH
 
@@ -1705,7 +1705,7 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 		configure_stream_local("DISTANCE_SENSOR", 10.0f);
 		configure_stream_local("MOUNT_ORIENTATION", 10.0f);
 		configure_stream_local("ODOMETRY", 30.0f);
-		configure_stream_local("MPC_FULL_STATE", unlimited_rate);
+		configure_stream_local("MPC_FULL_STATE", 10.0f);
 
 		configure_stream_local("ACTUATOR_CONTROL_TARGET0", 30.0f);
 		configure_stream_local("ADSB_VEHICLE", unlimited_rate);
@@ -1796,7 +1796,7 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 		configure_stream_local("DISTANCE_SENSOR", 10.0f);
 		configure_stream_local("MOUNT_ORIENTATION", 10.0f);
 		configure_stream_local("OBSTACLE_DISTANCE", 10.0f);
-		configure_stream_local("ODOMETRY", 30.0f);
+		// configure_stream_local("ODOMETRY", 30.0f);
 		configure_stream_local("GIMBAL_DEVICE_ATTITUDE_STATUS", 1.0f);
 		configure_stream_local("GIMBAL_MANAGER_STATUS", 0.5f);
 		configure_stream_local("GIMBAL_DEVICE_SET_ATTITUDE", 5.0f);
@@ -1834,7 +1834,7 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 		configure_stream_local("DEBUG", 1.0f);
 		configure_stream_local("DEBUG_FLOAT_ARRAY", 1.0f);
 		configure_stream_local("DEBUG_VECT", 1.0f);
-		configure_stream_local("NAMED_VALUE_FLOAT", 1.0f);
+		configure_stream_local("NAMED_VALUE_FLOAT", 10.0f);
 #endif // !CONSTRAINED_FLASH
 		break;
 

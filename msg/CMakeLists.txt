@@ -211,6 +211,7 @@ set(msg_files
 	wind.msg
 	yaw_estimator_status.msg
 	mpc_full_state.msg
+	mpc_motors_cmd.msg
 )
 
 if(NOT px4_constrained_flash_build)

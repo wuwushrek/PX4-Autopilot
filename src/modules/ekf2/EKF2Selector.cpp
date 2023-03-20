@@ -599,11 +599,13 @@ void EKF2Selector::PublishMpcFullState(vehicle_odometry_s &curr_odom)
 	actuator_motors_s motors_cmd;
 	_actuator_motors_sub.copy(&motors_cmd);
 	// Copy the actuator_motors message inside the mpc full state message
-	// TODO : Improve this part for all possible configurations
+	// Maybe smething that can work beyond the first 6 motors
 	mpc_full_state.m1 = motors_cmd.control[0];
 	mpc_full_state.m2 = motors_cmd.control[1];
 	mpc_full_state.m3 = motors_cmd.control[2];
 	mpc_full_state.m4 = motors_cmd.control[3];
+	mpc_full_state.m5 = motors_cmd.control[4];
+	mpc_full_state.m6 = motors_cmd.control[5];
 	// Publish the mpc full state message
 	_mpc_full_state_pub.publish(mpc_full_state);
 }
