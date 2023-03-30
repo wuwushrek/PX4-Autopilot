@@ -53,6 +53,9 @@ MulticopterRateControl::MulticopterRateControl(bool vtol) :
 
 	parameters_updated();
 	_controller_status_pub.advertise();
+	// Init the debug topic message
+	strncpy(dbg.key, "mpc_state", sizeof(dbg.key));
+	dbg.value = 0.0f;
 }
 
 MulticopterRateControl::~MulticopterRateControl()
@@ -170,6 +173,103 @@ MulticopterRateControl::Run()
 		// use rates setpoint topic
 		vehicle_rates_setpoint_s vehicle_rates_setpoint{};
 
+		// Store mpc failure status -> 2.0 if timeout,
+		float mpc_failure = -1.0f;
+
+		// Check if there is an MPC message in the queue
+		if (_mpc_motors_cmd_sub.update(&_mpc_motors_cmd)) {
+			_last_run_mpc = now;
+			// Update the current MPC mode
+			if (_mpc_motors_cmd.mpc_on != _last_mode){
+				// Warn the user with previous and new mode
+				mavlink_log_critical(&_mavlink_log_pub, "MPC mode from %d to %d", _last_mode, _mpc_motors_cmd.mpc_on);
+				_last_mode = _mpc_motors_cmd.mpc_on;
+			}
+		}
+
+		// Check if reset is demanded
+		if (_mpc_motors_cmd.mpc_on == mpc_motors_cmd_s::MPC_RESET){
+			_reset_done = true;
+			_mpc_motors_cmd.mpc_on = mpc_motors_cmd_s::MPC_OFF;
+			mavlink_log_critical(&_mavlink_log_pub, "MPC INITIALIZED!\t");
+		}
+
+		bool _mpc_control = (_mpc_motors_cmd.mpc_on == mpc_motors_cmd_s::MPC_ON) || (_mpc_motors_cmd.mpc_on == mpc_motors_cmd_s::MPC_TEST);
+
+		// Update _mpc_control depending on the time elapsed since the last update
+		if ( _mpc_control && _reset_done) { // Delay of 40ms
+			const int dt_mpc = (now - _last_run_mpc) / 1000;
+			if (dt_mpc > 40) { // 40 ms -> This is hardcoded for now
+				_mpc_control = false;
+				// Warn the user and print the delay
+				mavlink_log_critical(&_mavlink_log_pub, "MPC timeout delay: %d ms", dt_mpc);
+				mpc_failure = 2.0f;
+			}
+		}
+
+		// If the mpc_control is true
+		if (_mpc_control && _reset_done) {
+			// Set the thrust setpoint
+			_thrust_setpoint(0) = _thrust_setpoint(1) = 0.0f;
+			_thrust_setpoint(2) = -_mpc_motors_cmd.thrust_and_angrate_des[0];
+
+			// Now let set the rate setpoint
+			// The values are converted in the NED body frame so FRD
+			_rates_setpoint(0) = _mpc_motors_cmd.thrust_and_angrate_des[1];
+			_rates_setpoint(1) = -_mpc_motors_cmd.thrust_and_angrate_des[2];
+			_rates_setpoint(2) = -_mpc_motors_cmd.thrust_and_angrate_des[3];
+
+			// publish rate setpoint
+			vehicle_rates_setpoint.roll = _rates_setpoint(0);
+			vehicle_rates_setpoint.pitch = _rates_setpoint(1);
+			vehicle_rates_setpoint.yaw = _rates_setpoint(2);
+			_thrust_setpoint.copyTo(vehicle_rates_setpoint.thrust_body);
+			vehicle_rates_setpoint.timestamp = hrt_absolute_time();
+			// _vehicle_rates_setpoint_pub.publish(vehicle_rates_setpoint);
+		}
+
+		// If the mpc_control fails but the controller is ON, then there is some issue
+		if (!_mpc_control && (_mpc_motors_cmd.mpc_on == mpc_motors_cmd_s::MPC_ON || _mpc_motors_cmd.mpc_on == mpc_motors_cmd_s::MPC_TEST)) {
+			// Set rates_setpoint to zero values
+			if (_reset_done && _mpc_motors_cmd.mpc_on == mpc_motors_cmd_s::MPC_ON){
+				_rates_setpoint(0) = 0.0f;
+				_rates_setpoint(1) = 0.0f;
+				_rates_setpoint(2) = 0.0f;
+				_thrust_setpoint(0) = 0.0f;
+				_thrust_setpoint(1) = 0.0f;
+				// TODO: A better solution here
+				// We take the current thrust_body and add a small value to make the drone fall slowly
+				_thrust_setpoint(2) = - 0.25f; // A somehow slow fall
+				// publish rate setpoint
+				vehicle_rates_setpoint.roll = _rates_setpoint(0);
+				vehicle_rates_setpoint.pitch = _rates_setpoint(1);
+				vehicle_rates_setpoint.yaw = _rates_setpoint(2);
+				_thrust_setpoint.copyTo(vehicle_rates_setpoint.thrust_body);
+				vehicle_rates_setpoint.timestamp = hrt_absolute_time();
+				_vehicle_rates_setpoint_pub.publish(vehicle_rates_setpoint);
+			}
+			_reset_done = false;
+			_mpc_motors_cmd.mpc_on = mpc_motors_cmd_s::MPC_OFF;
+		}
+
+		if (!_mpc_control) {
+			// If the mpc_control is fals
+			_mpc_motors_cmd.mpc_on = mpc_motors_cmd_s::MPC_OFF;
+		}
+
+		// Check if mpc is on
+		bool mpc_on = _mpc_motors_cmd.mpc_on == mpc_motors_cmd_s::MPC_ON && _mpc_control && _reset_done;
+
+		// Debug out the state of the mpc
+		dbg.value = mpc_on? 1.0f : mpc_failure;
+		_dbg_pub.publish(dbg);
+		if (mpc_on) {
+			// Publish the command
+			_vehicle_rates_setpoint_pub.publish(vehicle_rates_setpoint);
+
+		}
+
+
 		if (_vehicle_control_mode.flag_control_manual_enabled && !_vehicle_control_mode.flag_control_attitude_enabled) {
 			// generate the rate setpoint from sticks
 			manual_control_setpoint_s manual_control_setpoint;
@@ -205,8 +305,7 @@ MulticopterRateControl::Run()
 		}
 
 		// run the rate controller
-		if (_vehicle_control_mode.flag_control_rates_enabled) {
-
+		if (_vehicle_control_mode.flag_control_rates_enabled || mpc_on) {
 			// reset integral if disarmed
 			if (!_vehicle_control_mode.flag_armed || _vehicle_status.vehicle_type != vehicle_status_s::VEHICLE_TYPE_ROTARY_WING) {
 				_rate_control.resetIntegral();

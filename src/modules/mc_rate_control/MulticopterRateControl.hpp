@@ -63,6 +63,8 @@
 #include <uORB/topics/vehicle_thrust_setpoint.h>
 #include <uORB/topics/vehicle_torque_setpoint.h>
 
+#include <uORB/topics/mpc_motors_cmd.h>
+#include <uORB/topics/debug_key_value.h>
 using namespace time_literals;
 
 class MulticopterRateControl : public ModuleBase<MulticopterRateControl>, public ModuleParams, public px4::WorkItem
@@ -141,6 +143,18 @@ private:
 	float _control_energy[4] {};
 
 	int8_t _landing_gear{landing_gear_s::GEAR_DOWN};
+
+	// Raw Torque and Moment commands
+	mpc_motors_cmd_s _mpc_motors_cmd{};
+	uORB::Subscription _mpc_motors_cmd_sub{ORB_ID(mpc_motors_cmd)};
+	uint8_t _last_mode{0};
+	hrt_abstime _last_run_mpc{0};
+	bool _reset_done{false};
+
+	// Send via mavlink debug message on the state of the MPC
+	struct debug_key_value_s dbg;
+	uORB::Publication<debug_key_value_s> _dbg_pub{ORB_ID(debug_key_value)};
+
 
 	DEFINE_PARAMETERS(
 		(ParamFloat<px4::params::MC_ROLLRATE_P>) _param_mc_rollrate_p,
