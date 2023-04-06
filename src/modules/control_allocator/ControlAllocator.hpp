@@ -77,6 +77,9 @@
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/failure_detector_status.h>
 
+#include <uORB/topics/mpc_motors_cmd.h>
+#include <uORB/topics/debug_key_value.h>
+
 class ControlAllocator : public ModuleBase<ControlAllocator>, public ModuleParams, public px4::ScheduledWorkItem
 {
 public:
@@ -173,6 +176,15 @@ private:
 
 	uORB::Subscription _vehicle_torque_setpoint1_sub{ORB_ID(vehicle_torque_setpoint), 1};  /**< vehicle torque setpoint subscription (2. instance) */
 	uORB::Subscription _vehicle_thrust_setpoint1_sub{ORB_ID(vehicle_thrust_setpoint), 1};	 /**< vehicle thrust setpoint subscription (2. instance) */
+
+	// Motor command subscription
+	uORB::Subscription _mpc_motors_cmd_sub{ORB_ID(mpc_motors_cmd)};
+	float _motors_input_mpc[6] {};
+	float _weight_motors_mpc{0.0};
+	float _weight_angrate_mpc{1.0f};
+	// Debug key value subscription
+	uORB::Subscription _debug_key_value_sub{ORB_ID(debug_key_value)};
+	bool _mpc_on{false};
 
 	// Outputs
 	uORB::PublicationMulti<control_allocator_status_s> _control_allocator_status_pub[2] {ORB_ID(control_allocator_status), ORB_ID(control_allocator_status)};

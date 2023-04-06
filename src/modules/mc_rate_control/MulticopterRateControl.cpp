@@ -54,7 +54,7 @@ MulticopterRateControl::MulticopterRateControl(bool vtol) :
 	parameters_updated();
 	_controller_status_pub.advertise();
 	// Init the debug topic message
-	strncpy(dbg.key, "mpc_state", sizeof(dbg.key));
+	strncpy(dbg.key, "mpc", sizeof(dbg.key));
 	dbg.value = 0.0f;
 }
 
@@ -175,10 +175,12 @@ MulticopterRateControl::Run()
 
 		// Store mpc failure status -> 2.0 if timeout,
 		float mpc_failure = -1.0f;
+		bool mpc_updated = false;
 
 		// Check if there is an MPC message in the queue
 		if (_mpc_motors_cmd_sub.update(&_mpc_motors_cmd)) {
 			_last_run_mpc = now;
+			mpc_updated = true;
 			// Update the current MPC mode
 			if (_mpc_motors_cmd.mpc_on != _last_mode){
 				// Warn the user with previous and new mode
@@ -208,7 +210,7 @@ MulticopterRateControl::Run()
 		}
 
 		// If the mpc_control is true
-		if (_mpc_control && _reset_done) {
+		if (_mpc_control && _reset_done && mpc_updated) {
 			// Set the thrust setpoint
 			_thrust_setpoint(0) = _thrust_setpoint(1) = 0.0f;
 			_thrust_setpoint(2) = -_mpc_motors_cmd.thrust_and_angrate_des[0];
@@ -225,7 +227,6 @@ MulticopterRateControl::Run()
 			vehicle_rates_setpoint.yaw = _rates_setpoint(2);
 			_thrust_setpoint.copyTo(vehicle_rates_setpoint.thrust_body);
 			vehicle_rates_setpoint.timestamp = hrt_absolute_time();
-			// _vehicle_rates_setpoint_pub.publish(vehicle_rates_setpoint);
 		}
 
 		// If the mpc_control fails but the controller is ON, then there is some issue
@@ -262,11 +263,12 @@ MulticopterRateControl::Run()
 
 		// Debug out the state of the mpc
 		dbg.value = mpc_on? 1.0f : mpc_failure;
+		dbg.timestamp = hrt_absolute_time();
 		_dbg_pub.publish(dbg);
-		if (mpc_on) {
+
+		if (mpc_on && mpc_updated) {
 			// Publish the command
 			_vehicle_rates_setpoint_pub.publish(vehicle_rates_setpoint);
-
 		}
 
 
@@ -295,7 +297,7 @@ MulticopterRateControl::Run()
 				_vehicle_rates_setpoint_pub.publish(vehicle_rates_setpoint);
 			}
 
-		} else if (_vehicle_rates_setpoint_sub.update(&vehicle_rates_setpoint)) {
+		} else if ( !mpc_on && _vehicle_rates_setpoint_sub.update(&vehicle_rates_setpoint)) {
 			if (_vehicle_rates_setpoint_sub.copy(&vehicle_rates_setpoint)) {
 				_rates_setpoint(0) = PX4_ISFINITE(vehicle_rates_setpoint.roll)  ? vehicle_rates_setpoint.roll  : rates(0);
 				_rates_setpoint(1) = PX4_ISFINITE(vehicle_rates_setpoint.pitch) ? vehicle_rates_setpoint.pitch : rates(1);

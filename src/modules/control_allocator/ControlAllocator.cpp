@@ -655,12 +655,39 @@ ControlAllocator::publish_actuator_controls()
 
 	uint32_t stopped_motors = _actuator_effectiveness->getStoppedMotors() | _handled_motor_failure_bitmask;
 
+	// Debug message to query the mpc state
+	debug_key_value_s dbg;
+	if (_debug_key_value_sub.update(&dbg)) {
+		if (strcmp(dbg.key, "mpc") == 0) {
+			_mpc_on = abs(dbg.value - 1.0f) <= 0.0001f;
+		}
+		// Get the mpc motors inputs
+		// Check if there is an MPC message in the queue
+		if (_mpc_on){
+			mpc_motors_cmd_s _mpc_motors_cmd;
+			if (_mpc_motors_cmd_sub.update(&_mpc_motors_cmd)) {
+				_mpc_on = _mpc_motors_cmd.weight_motors > 0;
+				_weight_motors_mpc = _mpc_motors_cmd.weight_motors * 0.01f;
+				_weight_angrate_mpc = 1 - _weight_motors_mpc;
+				if (_mpc_on){
+					for (int _i = 0; _i < 6; _i++) {
+						_motors_input_mpc[_i] = _mpc_motors_cmd.motor_val_des[_i];
+					}
+				}
+			}
+		}
+	}
+
 	// motors
 	int motors_idx;
 
 	for (motors_idx = 0; motors_idx < _num_actuators[0] && motors_idx < actuator_motors_s::NUM_CONTROLS; motors_idx++) {
 		int selected_matrix = _control_allocation_selection_indexes[actuator_idx];
 		float actuator_sp = _control_allocation[selected_matrix]->getActuatorSetpoint()(actuator_idx_matrix[selected_matrix]);
+		if (_mpc_on && motors_idx < 6) {
+			// A linear combination between the two motors inputs
+			actuator_sp = _motors_input_mpc[motors_idx] * _weight_motors_mpc + actuator_sp * _weight_angrate_mpc;
+		}
 		actuator_motors.control[motors_idx] = PX4_ISFINITE(actuator_sp) ? actuator_sp : NAN;
 
 		if (stopped_motors & (1u << motors_idx)) {

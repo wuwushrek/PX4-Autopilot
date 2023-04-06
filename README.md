@@ -27,6 +27,74 @@ The [PX4 User Guide](https://docs.px4.io/main/en/) explains how to assemble [sup
 See the [forum and chat](https://docs.px4.io/main/en/#getting-help) if you need help!
 
 
+## MPC Modifications in mpc_franck branch
+
+Now, we are going to explain the modifications we have made in the mpc_franck branch.
+
+1. Checkout the mpc_franck branch, assuming you are in the PX4-Autopilot directory:
+```bash
+cd ~/Documents/
+git clone https://github.com/wuwushrek/PX4-Autopilot.git
+cd PX4-Autopilot
+git checkout mpc_franck
+git submodule update --init --recursive
+# bash ./Tools/setup/ubuntu.sh # If you have not installed the dependencies yet, https://docs.px4.io/main/en/dev_setup/dev_env_linux_ubuntu.html
+```
+
+2. We add the custom MPC messages in mavlink
+```bash
+code src/modules/mavlink/mavlink/message_definitions/v1.0/common.xml
+```
+
+Now, we will modify the .xml file by inserting the snipplet below
+Search for SMART_BATTERY_INFO and copy and paste the tag below before the SMART_BATTERY_INFO message and save the file.
+```xml
+    <message id="367" name="MPC_FULL_STATE">
+      <description>Full MPC State used for offline mpc-based control</description>
+      <field type="uint64_t" name="time_usec" units="us">Timestamp (UNIX Epoch time or time since system boot). The receiving end can infer timestamp format (since 1.1.1970 or since system boot) by checking for the magnitude of the number.</field>
+      <field type="float" name="x" units="m">X Position in POSE_FRAME_NED</field>
+      <field type="float" name="y" units="m">Y Position in POSE_FRAME_NED</field>
+      <field type="float" name="z" units="m">Z Position in POSE_FRAME_NED</field>
+      <field type="float" name="vx" units="m/s">X Speed in POSE_FRAME_NED</field>
+      <field type="float" name="vy" units="m/s">Y Speed in POSE_FRAME_NED</field>
+      <field type="float" name="vz" units="m/s">Z Speed in POSE_FRAME_NED</field>
+      <field type="float" name="qw">Qw quaternion : Body frame NED to pose_frame_ned</field>
+      <field type="float" name="qx">Qx quaternion : Body frame NED to pose_frame_ned</field>
+      <field type="float" name="qy">Qy quaternion : Body frame NED to pose_frame_ned</field>
+      <field type="float" name="qz">Qz quaternion : Body frame NED to pose_frame_ned</field>
+      <field type="float" name="wx" units="rad/s/s">Rollspeed : Body frame NED</field>
+      <field type="float" name="wy" units="rad/s/s">Pitchspeed : Body frame NED</field>
+      <field type="float" name="wz" units="rad/s/s">Yawspeed : Body frame NED</field>
+      <field type="float" name="m1">Motor 1 input</field>
+      <field type="float" name="m2">Motor 2 input</field>
+      <field type="float" name="m3">Motor 3 input</field>
+      <field type="float" name="m4">Motor 4 input</field>
+      <field type="float" name="m5">Motor 5 input</field>
+      <field type="float" name="m6">Motor 6 input</field>
+    </message>
+    <message id="368" name="MPC_MOTORS_CMD">
+      <description>Full MPC Normalized motors commands</description>
+      <field type="uint64_t" name="time_usec" units="us">Timestamp (UNIX Epoch time or time since system boot). The receiving end can infer timestamp format (since 1.1.1970 or since system boot) by checking for the magnitude of the number.</field>
+      <field type="float[6]" name="motor_val_des">Motor imputs between 0 and 1</field>
+      <field type="float[4]" name="thrust_and_angrate_des">Thrust and angular rate desired command. T, wx, wy,wz. T is between 0 and 1 while wx, wy, wz have standard units</field>
+      <field type="uint8_t" name="mpc_on">Specify if the state of the mpc</field>
+      <field type="uint8_t" name="weight_motors">Constant parameter weighting if we track the angrate_des or motor output directly.Value between 0 and 100 </field>
+    </message>
+```
+
+3. We add our light hexacopter model that doesn't have a gimbal and camera in the airframe file
+```bash
+cd ~/Documents/PX4-Autopilot
+cp -r my_custom_models/* Tools/simulation/gazebo/sitl_gazebo/models/
+```
+
+4. Build the firmware for sitl for testing
+```bash
+make px4_sitl gazebo # Or, make px4_sitl gazebo_myhexa
+```
+
+
+========================================================================================================================
 ## Changing code and contributing
 
 This [Developer Guide](https://docs.px4.io/main/en/development/development.html) is for software developers who want to modify the flight stack and middleware (e.g. to add new flight modes), hardware integrators who want to support new flight controller boards and peripherals, and anyone who wants to get PX4 working on a new (unsupported) airframe/vehicle.
