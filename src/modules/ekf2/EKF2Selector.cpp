@@ -592,12 +592,15 @@ void EKF2Selector::PublishMpcFullState(vehicle_odometry_s &curr_odom)
 	mpc_full_state.qx = curr_odom.q[1];
 	mpc_full_state.qy = curr_odom.q[2];
 	mpc_full_state.qz = curr_odom.q[3];
-	mpc_full_state.wx = curr_odom.angular_velocity[0];
-	mpc_full_state.wy = curr_odom.angular_velocity[1];
-	mpc_full_state.wz = curr_odom.angular_velocity[2];
+	// mpc_full_state.wx = curr_odom.angular_velocity[0];
+	// mpc_full_state.wy = curr_odom.angular_velocity[1];
+	// mpc_full_state.wz = curr_odom.angular_velocity[2];
 	// Create an actuator_motors message
 	actuator_motors_s motors_cmd;
 	_actuator_motors_sub.copy(&motors_cmd);
+	// Query vehicle_angular_velocity message
+	vehicle_angular_velocity_s angular_velocity;
+	_vehicle_angular_velocity_sub.copy(&angular_velocity);
 	// Copy the actuator_motors message inside the mpc full state message
 	// Maybe smething that can work beyond the first 6 motors
 	mpc_full_state.m1 = motors_cmd.control[0];
@@ -606,6 +609,10 @@ void EKF2Selector::PublishMpcFullState(vehicle_odometry_s &curr_odom)
 	mpc_full_state.m4 = motors_cmd.control[3];
 	mpc_full_state.m5 = motors_cmd.control[4];
 	mpc_full_state.m6 = motors_cmd.control[5];
+	// Copy filtered angular velocity inside the mpc full state message
+	mpc_full_state.wx = angular_velocity.xyz[0];
+	mpc_full_state.wy = angular_velocity.xyz[1];
+	mpc_full_state.wz = angular_velocity.xyz[2];
 	// Publish the mpc full state message
 	_mpc_full_state_pub.publish(mpc_full_state);
 }

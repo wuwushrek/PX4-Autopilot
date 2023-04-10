@@ -1633,7 +1633,8 @@ MavlinkReceiver::handle_message_mpc_motors_cmd(mavlink_message_t *msg)
 	offboard_control_mode_s offboard_control_mode{};
 	offboard_control_mode.body_rate = true;
 	offboard_control_mode.timestamp = mpc_m_msg.timestamp;
-	if (mpc_m_msg.mpc_on == mpc_motors_cmd_s::MPC_ON) {
+	bool _mpc_enable = mpc_m_msg.mpc_on >= mpc_motors_cmd_s::MPC_POSCTRL;
+	if (_mpc_enable) {
 		_offboard_control_mode_pub.publish(offboard_control_mode);
 	}
 

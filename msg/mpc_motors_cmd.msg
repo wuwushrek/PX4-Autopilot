@@ -1,8 +1,10 @@
 # Few static parameters for the message
-uint8 MPC_ON = 1
 uint8 MPC_OFF = 0
+uint8 MPC_RESET = 1
 uint8 MPC_TEST = 2
-uint8 MPC_RESET = 3
+uint8 MPC_POSCTRL = 3
+uint8 MPC_IDLE = 4
+uint8 MPC_TRAJCTRL = 5
 
 # time since system start (microseconds)
 uint64 timestamp

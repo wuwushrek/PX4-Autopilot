@@ -195,8 +195,8 @@ MulticopterRateControl::Run()
 			_mpc_motors_cmd.mpc_on = mpc_motors_cmd_s::MPC_OFF;
 			mavlink_log_critical(&_mavlink_log_pub, "MPC INITIALIZED!\t");
 		}
-
-		bool _mpc_control = (_mpc_motors_cmd.mpc_on == mpc_motors_cmd_s::MPC_ON) || (_mpc_motors_cmd.mpc_on == mpc_motors_cmd_s::MPC_TEST);
+		bool on_mode = _mpc_motors_cmd.mpc_on >= mpc_motors_cmd_s::MPC_POSCTRL;
+		bool _mpc_control = _mpc_motors_cmd.mpc_on >= mpc_motors_cmd_s::MPC_TEST;
 
 		// Update _mpc_control depending on the time elapsed since the last update
 		if ( _mpc_control && _reset_done) { // Delay of 40ms
@@ -230,9 +230,9 @@ MulticopterRateControl::Run()
 		}
 
 		// If the mpc_control fails but the controller is ON, then there is some issue
-		if (!_mpc_control && (_mpc_motors_cmd.mpc_on == mpc_motors_cmd_s::MPC_ON || _mpc_motors_cmd.mpc_on == mpc_motors_cmd_s::MPC_TEST)) {
+		if (!_mpc_control && (on_mode || _mpc_motors_cmd.mpc_on == mpc_motors_cmd_s::MPC_TEST)) {
 			// Set rates_setpoint to zero values
-			if (_reset_done && _mpc_motors_cmd.mpc_on == mpc_motors_cmd_s::MPC_ON){
+			if (_reset_done && on_mode){
 				_rates_setpoint(0) = 0.0f;
 				_rates_setpoint(1) = 0.0f;
 				_rates_setpoint(2) = 0.0f;
@@ -259,7 +259,7 @@ MulticopterRateControl::Run()
 		}
 
 		// Check if mpc is on
-		bool mpc_on = _mpc_motors_cmd.mpc_on == mpc_motors_cmd_s::MPC_ON && _mpc_control && _reset_done;
+		bool mpc_on = on_mode && _mpc_control && _reset_done;
 
 		// Debug out the state of the mpc
 		dbg.value = mpc_on? 1.0f : mpc_failure;
